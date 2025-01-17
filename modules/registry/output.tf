@@ -1,20 +1,13 @@
 
-output "db_instance_arn" {
-  value = module.db.db_instance_arn
+output "registry" {
+  value = {
+    for service in var.micro_services :
+    service => {
+      repository_url = module.registry[service].repository_url
+    }
+  }
 }
 
-output "db_instance_endpoint" {
-  value = module.db.db_instance_endpoint
-}
-
-output "db_user" {
-  value = var.db_user
-}
-
-output "db_password" {
-  value = var.db_password
-}
-
-output "db_name" {
-  value = var.db_name
+output "registry_base_url" {
+  value = var.ecr_base_url
 }
