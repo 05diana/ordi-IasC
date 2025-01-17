@@ -1,35 +1,38 @@
 
-locals {
-  engine_family = "postgres${split(".", var.db_version)[0]}"
-}
+module "registry" {
+  source   = "terraform-aws-modules/ecr/aws"
+  for_each = toset(var.micro_services)
 
-module "db" {
-  source = "terraform-aws-modules/rds/aws"
+  repository_name         = each.key
+  repository_force_delete = true
 
-  engine                      = "postgres"
-  family                      = local.engine_family
-  multi_az                    = var.multi_az
-  engine_version              = var.db_version
-  db_name                     = var.db_name
-  username                    = var.db_user
-  password                    = var.db_password
-  allocated_storage           = var.db_storage
-  instance_class              = var.db_instance_class
-  skip_final_snapshot         = true
-  deletion_protection         = false
-  publicly_accessible         = true
-  apply_immediately           = true
-  auto_minor_version_upgrade  = true
-  allow_major_version_upgrade = true
-  identifier                  = "${terraform.workspace}-db-instance"
-  subnet_ids                  = var.private_subnet_ids
-  vpc_security_group_ids      = [var.postgresql_sg_id]
-  create_db_subnet_group      = true
-  storage_encrypted           = false
-  manage_master_user_password = false
+  repository_lifecycle_policy = jsonencode({
+    rules = [
+      {
+        rulePriority = 1,
+        description  = "Keep last 3 images",
+        selection = {
+          tagStatus     = "tagged",
+          tagPrefixList = ["v"],
+          countType     = "imageCountMoreThan",
+          countNumber   = 3
+        },
+        action = {
+          type = "expire"
+        }
+      }
+    ]
+  })
+
+  public_repository_catalog_data = {
+    description       = "Repository for ${each.key} application"
+    operating_systems = ["Linux"]
+    architectures     = ["x86_64"]
+  }
 
   tags = {
-    Terraform   = "true"
-    Environment = terraform.workspace
+    Terraform     = "true"
+    Environment   = terraform.workspace
+    MicroServicio = "${each.key}-ms"
   }
 }
