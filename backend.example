@@ -1,0 +1,7 @@
+
+## Backend State
+region         = "us-zone-#"
+bucket         = "tfstate-bucket"
+key            = "iasc/terraform.tfstate"
+dynamodb_table = "tfstate-locking"
+encrypt        = true
